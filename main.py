@@ -4,45 +4,76 @@ from pprint import pprint
 
 import requests
 
+# --------------- Helpers that build all of the responses ----------------------
 
+def build_speechlet_response(title, output, reprompt_text, should_end_session):
+    return {
+        'outputSpeech': {
+            'type': 'PlainText',
+            'text': output
+        },
+        'card': {
+            'type': 'Simple',
+            'title': "SessionSpeechlet - " + title,
+            'content': "SessionSpeechlet - " + output
+        },
+        'reprompt': {
+            'outputSpeech': {
+                'type': 'PlainText',
+                'text': reprompt_text
+            }
+        },
+        'shouldEndSession': should_end_session
+    }
+
+
+def build_response(session_attributes, speechlet_response):
+    return {
+        'version': '1.0',
+        'sessionAttributes': session_attributes,
+        'response': speechlet_response
+    }
+
+
+# --------------- Functions that control the skill's behavior ------------------
 base_api = 'http://parking.api.smgov.net'
 headers = {"Accept" : "application/json"}
 
 def get_all_lots():
-	r = requests.get(base_api + '/lots/', headers=headers)	
-	return r.json()
+    r = requests.get(base_api + '/lots/', headers=headers)  
+    return r.json()
 
 
 def get_all_lot_names():
-	for lot in get_all_lots():
-		print lot['name']
+    for lot in get_all_lots():
+        print lot['name']
 
 
 def get_lot_matching(lot_name):
-	r = requests.get(base_api + '/lots/matching/' + lot_name, headers=headers)
-	return r.json()[0]
+    r = requests.get(base_api + '/lots/matching/' + lot_name, headers=headers)
+    return r.json()[0]
 
 
 def get_lot_details(lot_name):
-	lot = get_lot_matching(lot_name)
-	print lot['description']
-	print lot['available_spaces']
-	print lot['street_address']
+    lot = get_lot_matching(lot_name)
+    print lot['description']
+    print lot['available_spaces']
+    print lot['street_address']
 
 
 def get_lot_with_most_spaces():
-	lot_with_most_spaces = None
-	max_spaces = None
-	for lot in get_all_lots():	
-		if max_spaces < lot['available_spaces']:
-			max_spaces = lot['available_spaces']
-			lot_with_most_spaces = lot['name']
-	return lot_with_most_spaces
+    lot_with_most_spaces = None
+    max_spaces = None
+    for lot in get_all_lots():  
+        if max_spaces < lot['available_spaces']:
+            max_spaces = lot['available_spaces']
+            lot_with_most_spaces = lot['name']
+    return lot_with_most_spaces
 
 
 # def recent_meter_events():
-# 	r = requests.get(base_api + '/meters/events', headers=headers)
-# 	pprint(r.json())
+#   r = requests.get(base_api + '/meters/events', headers=headers)
+#   pprint(r.json())
 
 # def get_lot_names():
 
@@ -52,8 +83,6 @@ get_all_lot_names()
 # get_lot_with_most_spaces()
 # recent_meter_events()
 
-
-# --------------- Functions that control the skill's behavior ------------------
 
 def get_welcome_response():
     """ If we wanted to initialize the session to have some attributes we could
@@ -121,6 +150,27 @@ def set_color_in_session(intent, session):
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
 
+
+def get_color_from_session(intent, session):
+    session_attributes = {}
+    reprompt_text = None
+
+    if session.get('attributes', {}) and "favoriteColor" in session.get('attributes', {}):
+        favorite_color = session['attributes']['favoriteColor']
+        speech_output = "Your favorite color is " + favorite_color + \
+                        ". Goodbye."
+        should_end_session = True
+    else:
+        speech_output = "I'm not sure what your favorite color is. " \
+                        "You can say, my favorite color is red."
+        should_end_session = False
+
+    # Setting reprompt_text to None signifies that we do not want to reprompt
+    # the user. If the user does not respond or says something that is not
+    # understood, the session will end.
+    return build_response(session_attributes, build_speechlet_response(
+        intent['name'], speech_output, reprompt_text, should_end_session))
+
 # --------------- Events ------------------
 
 def on_session_started(session_started_request, session):
@@ -140,7 +190,7 @@ def on_launch(launch_request, session):
     # Dispatch to your skill's launch
     return get_welcome_response()
 
-
+#FIX
 def on_intent(intent_request, session):
     """ Called when the user specifies an intent for this skill """
 
@@ -161,3 +211,43 @@ def on_intent(intent_request, session):
         return handle_session_end_request()
     else:
         raise ValueError("Invalid intent")
+
+#FIX
+def on_session_ended(session_ended_request, session):
+    """ Called when the user ends the session.
+
+    Is not called when the skill returns should_end_session=true
+    """
+    print("on_session_ended requestId=" + session_ended_request['requestId'] +
+          ", sessionId=" + session['sessionId'])
+    # add cleanup logic here
+
+
+# --------------- Main handler ------------------
+
+def lambda_handler(event, context):
+    """ Route the incoming request based on type (LaunchRequest, IntentRequest,
+    etc.) The JSON body of the request is provided in the event parameter.
+    """
+    print("event.session.application.applicationId=" +
+          event['session']['application']['applicationId'])
+
+    """
+    Uncomment this if statement and populate with your skill's application ID to
+    prevent someone else from configuring a skill that sends requests to this
+    function.
+    """
+    # if (event['session']['application']['applicationId'] !=
+    #         "amzn1.echo-sdk-ams.app.[unique-value-here]"):
+    #     raise ValueError("Invalid Application ID")
+
+    if event['session']['new']:
+        on_session_started({'requestId': event['request']['requestId']},
+                           event['session'])
+
+    if event['request']['type'] == "LaunchRequest":
+        return on_launch(event['request'], event['session'])
+    elif event['request']['type'] == "IntentRequest":
+        return on_intent(event['request'], event['session'])
+    elif event['request']['type'] == "SessionEndedRequest":
+        return on_session_ended(event['request'], event['session'])
