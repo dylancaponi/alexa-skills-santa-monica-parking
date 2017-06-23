@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-from pprint import pprint
+# from pprint import pprint
 
 import requests
 
@@ -43,10 +43,20 @@ def get_all_lots():
     r = requests.get(base_api + '/lots/', headers=headers)  
     return r.json()
 
+# pprint(get_all_lots())
 
-def get_all_lot_names():
-    for lot in get_all_lots():
-        print lot['name']
+def get_all_lot_names(intent, session):
+    card_title = intent['name']
+    session_attributes = {}
+    should_end_session = False
+
+    lot_names = [lot['name'] for lot in get_all_lots()]
+    lot_names = ','.join(lot_names)
+    print(lot_names)
+    speech_output = "The lot names in Santa Monica are," + lot_names
+    reprompt_text = speech_output
+    return build_response(session_attributes, build_speechlet_response(
+        card_title, speech_output, reprompt_text, should_end_session))
 
 
 def get_lot_matching(lot_name):
@@ -54,21 +64,46 @@ def get_lot_matching(lot_name):
     return r.json()[0]
 
 
-def get_lot_details(lot_name):
+def get_lot_details(intent, session):
+    print('get_lot_details')
+    card_title = intent['name']
+    session_attributes = {}
+    should_end_session = False
+
+    lot_name = intent['slots']['lot_name']['value']
+
     lot = get_lot_matching(lot_name)
-    print lot['description']
-    print lot['available_spaces']
-    print lot['street_address']
+    speech_output = lot['name'] + \
+        ' has ' + str(lot['available_spaces']) + \
+        ' available spaces.  It is located at ' + \
+        lot['street_address']
+
+    reprompt_text = speech_output
+    return build_response(session_attributes, build_speechlet_response(
+        card_title, speech_output, reprompt_text, should_end_session))
+    # print lot['description']
+    # print lot['available_spaces']
+    # print lot['street_address']
 
 
-def get_lot_with_most_spaces():
+def get_lot_with_most_spaces(intent, session):
+    print('get_lot_with_most_spaces')
+    card_title = intent['name']
+    session_attributes = {}
+    should_end_session = False
+
     lot_with_most_spaces = None
     max_spaces = None
     for lot in get_all_lots():  
         if max_spaces < lot['available_spaces']:
             max_spaces = lot['available_spaces']
             lot_with_most_spaces = lot['name']
-    return lot_with_most_spaces
+            street_address = lot['street_address']
+    speech_output = lot_with_most_spaces + ' is the emptiest lot with ' + \
+        str(max_spaces) + ' available spaces.  It is located at ' + lot['street_address']
+    reprompt_text = speech_output
+    return build_response(session_attributes, build_speechlet_response(
+        card_title, speech_output, reprompt_text, should_end_session))
 
 
 # def recent_meter_events():
@@ -77,7 +112,7 @@ def get_lot_with_most_spaces():
 
 # def get_lot_names():
 
-get_all_lot_names()
+# get_all_lot_names()
 # print get_lot_matching('Beach House')
 # get_lot_details('library')
 # get_lot_with_most_spaces()
@@ -93,7 +128,7 @@ def get_welcome_response():
     card_title = "Welcome"
     speech_output = "Welcome to Santa Monica parking information. " \
                     "Possible commands are, " \
-                    "List parking structures," \
+                    "List parking lots," \
                     "My favorite parking lot is Structure 1," \
                     "Details for name of parking lot," \
                     "How is parking at name of parking lot"
@@ -123,53 +158,53 @@ def create_favorite_lot_attributes(favorite_lot):
     return {"favoriteLot": favorite_lot}
 
 
-def set_color_in_session(intent, session):
-    """ Sets the color in the session and prepares the speech to reply to the
-    user.
-    """
+# def set_lot_in_session(intent, session):
+#     """ Sets the lot in the session and prepares the speech to reply to the
+#     user.
+#     """
 
-    card_title = intent['name']
-    session_attributes = {}
-    should_end_session = False
+#     card_title = intent['name']
+#     session_attributes = {}
+#     should_end_session = False
 
-    if 'Color' in intent['slots']:
-        favorite_color = intent['slots']['Color']['value']
-        session_attributes = create_favorite_color_attributes(favorite_color)
-        speech_output = "I now know your favorite color is " + \
-                        favorite_color + \
-                        ". You can ask me your favorite color by saying, " \
-                        "what's my favorite color?"
-        reprompt_text = "You can ask me your favorite color by saying, " \
-                        "what's my favorite color?"
-    else:
-        speech_output = "I'm not sure what your favorite color is. " \
-                        "Please try again."
-        reprompt_text = "I'm not sure what your favorite color is. " \
-                        "You can tell me your favorite color by saying, " \
-                        "my favorite color is red."
-    return build_response(session_attributes, build_speechlet_response(
-        card_title, speech_output, reprompt_text, should_end_session))
+#     if 'Color' in intent['slots']:
+#         favorite_color = intent['slots']['Color']['value']
+#         session_attributes = create_favorite_color_attributes(favorite_color)
+#         speech_output = "I now know your favorite color is " + \
+#                         favorite_color + \
+#                         ". You can ask me your favorite color by saying, " \
+#                         "what's my favorite color?"
+#         reprompt_text = "You can ask me your favorite color by saying, " \
+#                         "what's my favorite color?"
+#     else:
+#         speech_output = "I'm not sure what your favorite color is. " \
+#                         "Please try again."
+#         reprompt_text = "I'm not sure what your favorite color is. " \
+#                         "You can tell me your favorite color by saying, " \
+#                         "my favorite color is red."
+#     return build_response(session_attributes, build_speechlet_response(
+#         card_title, speech_output, reprompt_text, should_end_session))
 
 
-def get_color_from_session(intent, session):
-    session_attributes = {}
-    reprompt_text = None
+# def get_lot_from_session(intent, session):
+#     session_attributes = {}
+#     reprompt_text = None
 
-    if session.get('attributes', {}) and "favoriteColor" in session.get('attributes', {}):
-        favorite_color = session['attributes']['favoriteColor']
-        speech_output = "Your favorite color is " + favorite_color + \
-                        ". Goodbye."
-        should_end_session = True
-    else:
-        speech_output = "I'm not sure what your favorite color is. " \
-                        "You can say, my favorite color is red."
-        should_end_session = False
+#     if session.get('attributes', {}) and "favoriteColor" in session.get('attributes', {}):
+#         favorite_color = session['attributes']['favoriteColor']
+#         speech_output = "Your favorite color is " + favorite_color + \
+#                         ". Goodbye."
+#         should_end_session = True
+#     else:
+#         speech_output = "I'm not sure what your favorite color is. " \
+#                         "You can say, my favorite color is red."
+#         should_end_session = False
 
-    # Setting reprompt_text to None signifies that we do not want to reprompt
-    # the user. If the user does not respond or says something that is not
-    # understood, the session will end.
-    return build_response(session_attributes, build_speechlet_response(
-        intent['name'], speech_output, reprompt_text, should_end_session))
+#     # Setting reprompt_text to None signifies that we do not want to reprompt
+#     # the user. If the user does not respond or says something that is not
+#     # understood, the session will end.
+#     return build_response(session_attributes, build_speechlet_response(
+#         intent['name'], speech_output, reprompt_text, should_end_session))
 
 # --------------- Events ------------------
 
@@ -201,10 +236,17 @@ def on_intent(intent_request, session):
     intent_name = intent_request['intent']['name']
 
     # Dispatch to your skill's intent handlers
-    if intent_name == "MyColorIsIntent":
-        return set_color_in_session(intent, session)
-    elif intent_name == "WhatsMyColorIntent":
-        return get_color_from_session(intent, session)
+    # if intent_name == "MyLotIsIntent":
+    #     return set_lot_in_session(intent, session)
+    # elif intent_name == "WhatIsMyLotIntent":
+    #     return get_lot_from_session(intent, session)
+    print('intent_name:' + intent_name)
+    if intent_name == "GetAllLotNames":
+        return get_all_lot_names(intent, session)
+    elif intent_name == "GetLotDetails":
+        return get_lot_details(intent, session)
+    elif intent_name == "GetLotWithMostSpaces":
+        return get_lot_with_most_spaces(intent, session)        
     elif intent_name == "AMAZON.HelpIntent":
         return get_welcome_response()
     elif intent_name == "AMAZON.CancelIntent" or intent_name == "AMAZON.StopIntent":
@@ -212,7 +254,7 @@ def on_intent(intent_request, session):
     else:
         raise ValueError("Invalid intent")
 
-#FIX
+
 def on_session_ended(session_ended_request, session):
     """ Called when the user ends the session.
 
@@ -251,3 +293,31 @@ def lambda_handler(event, context):
         return on_intent(event['request'], event['session'])
     elif event['request']['type'] == "SessionEndedRequest":
         return on_session_ended(event['request'], event['session'])
+
+
+# test = {
+#   "session": {
+#     "sessionId": "SessionId.0014e394-67a9-454a-9778-5994e36df52d",
+#     "application": {
+#       "applicationId": "amzn1.ask.skill.5ead8604-c521-4b7f-8444-782287a4de0d"
+#     },
+#     "attributes": {},
+#     "user": {
+#       "userId": "amzn1.ask.account.AHZF4H2AG6SD6ZP2TJCKEOSKGCOHME52MFDVW5UUZ2PNSQRGTIFCCBEQTIXLYBBJHYEDH2HS5TB334F6EZVSTGPONX4RWECLYFBBZV43SSHIAZ2BLJMSJKTFE5ZPWQJ2URGH5RKANJFAEW5ACN5EQ7GQ2P4HD2WAYWSRNO2YIPGOLYIU3CJADDF2QWRAFWWZSAECDXG7PH32QCY"
+#     },
+#     "new": true
+#   },
+#   "request": {
+#     "type": "IntentRequest",
+#     "requestId": "EdwRequestId.55f97461-1c4d-40b8-a5eb-83e6182f3dd6",
+#     "locale": "en-US",
+#     "timestamp": "2017-06-22T20:11:53Z",
+#     "intent": {
+#       "name": "GetAllLotNames",
+#       "slots": {}
+#     }
+#   },
+#   "version": "1.0"
+# }
+
+# lambda_handler()
