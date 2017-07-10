@@ -1,0 +1,28 @@
+{
+  "intents": [
+    {
+      "intent": "GetAllLotNames"
+    },
+    {
+      "intent": "GetLotWithMostSpaces"
+    },
+    {
+      "slots": [
+        {
+          "name": "lot_name",
+          "type": "LIST_OF_LOTS"
+        }
+      ],
+      "intent": "GetLotDetails"
+    },
+    {
+      "intent": "AMAZON.StopIntent"
+    },
+    {
+      "intent": "AMAZON.CancelIntent"
+    },
+    {
+      "intent": "AMAZON.HelpIntent"
+    }
+  ]
+}

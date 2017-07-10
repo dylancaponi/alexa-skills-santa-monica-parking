@@ -1,0 +1,22 @@
+GetAllLotNames Lot names
+GetAllLotNames List all lots
+GetAllLotNames List all names
+GetAllLotNames List all lot names
+GetAllLotNames What lots are there
+GetAllLotNames Parking lot names
+GetAllLotNames Parking structure names
+GetLotWithMostSpaces Best parking
+GetLotWithMostSpaces Most parking
+GetLotWithMostSpaces Emptiest lot
+GetLotWithMostSpaces Best lot
+GetLotWithMostSpaces What lot has the most parking
+GetLotDetails Details for {lot_name}
+GetLotDetails Details on {lot_name}
+GetLotDetails Info for {lot_name}
+GetLotDetails Parking at {lot_name}
+GetLotDetails How many spots at {lot_name}
+GetLotDetails How many parking spots at {lot_name}
+GetLotDetails How many empty spots at {lot_name}
+GetLotDetails How many spaces at {lot_name}
+GetLotDetails How many parking spaces at {lot_name}
+AMAZON.StopIntent no

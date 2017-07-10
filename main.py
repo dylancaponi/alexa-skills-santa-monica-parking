@@ -14,8 +14,8 @@ def build_speechlet_response(title, output, reprompt_text, should_end_session):
         },
         'card': {
             'type': 'Simple',
-            'title': "SessionSpeechlet - " + title,
-            'content': "SessionSpeechlet - " + output
+            'title': title,
+            'content': output
         },
         'reprompt': {
             'outputSpeech': {
@@ -46,14 +46,15 @@ def get_all_lots():
 # pprint(get_all_lots())
 
 def get_all_lot_names(intent, session):
-    card_title = intent['name']
+    # card_title = intent['name']
+    card_title = 'Lot Names'
     session_attributes = {}
     should_end_session = False
 
     lot_names = [lot['name'] for lot in get_all_lots()]
     lot_names = ','.join(lot_names)
     print(lot_names)
-    speech_output = "The lot names in Santa Monica are," + lot_names
+    speech_output = "The lot names in Santa Monica are," + lot_names + ".  Would you like to get details on a lot?"
     reprompt_text = speech_output
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
@@ -66,17 +67,30 @@ def get_lot_matching(lot_name):
 
 def get_lot_details(intent, session):
     print('get_lot_details')
-    card_title = intent['name']
+    # card_title = intent['name']
+    card_title = 'Lot Details'
     session_attributes = {}
     should_end_session = False
 
     lot_name = intent['slots']['lot_name']['value']
+    print('lot_name')
+    print(lot_name)
 
-    lot = get_lot_matching(lot_name)
-    speech_output = lot['name'] + \
-        ' has ' + str(lot['available_spaces']) + \
-        ' available spaces.  It is located at ' + \
-        lot['street_address']
+    # correct pier pronunciation
+    if any(item in lot_name for item in ['Pierre deck', 'Pierre']):
+        lot_name = 'Pier Deck'
+
+    print(lot_name)
+    try:
+        lot = get_lot_matching(lot_name)
+        speech_output = lot['name'] + \
+            ' has ' + str(lot['available_spaces']) + \
+            ' available spaces.  It is located at ' + \
+            lot['street_address'] + '.  Would you like to get details on another lot?'
+    except:
+        speech_output = 'Sorry, ' + lot_name + \
+            ' is not recognized.  Please say, ' \
+            'list parking lots, for recognized names.  Would you like to get details on another lot?'
 
     reprompt_text = speech_output
     return build_response(session_attributes, build_speechlet_response(
@@ -88,9 +102,10 @@ def get_lot_details(intent, session):
 
 def get_lot_with_most_spaces(intent, session):
     print('get_lot_with_most_spaces')
-    card_title = intent['name']
+    # card_title = intent['name']
+    card_title = 'Emptiest Lot'
     session_attributes = {}
-    should_end_session = False
+    should_end_session = True
 
     lot_with_most_spaces = None
     max_spaces = None
@@ -127,18 +142,18 @@ def get_welcome_response():
     session_attributes = {}
     card_title = "Welcome"
     speech_output = "Welcome to Santa Monica parking information. " \
-                    "Possible commands are, " \
-                    "List parking lots," \
-                    "My favorite parking lot is Structure 1," \
-                    "Details for name of parking lot," \
-                    "How is parking at name of parking lot"
+                    "Example commands are, " \
+                    "List parking lots, " \
+                    "Details for Structure 1, " \
+                    "How is parking at Library" \
+                    # "My favorite parking lot is Structure 1," \
     # If the user either does not reply to the welcome message or says something
     # that is not understood, they will be prompted again with this text.
-    reprompt_text = "Possible commands are, " \
-                    "List parking lots," \
-                    "My favorite parking lot is Structure 1," \
-                    "Details for name of parking lot," \
-                    "How is parking at name of parking lot" 
+    reprompt_text = "Example commands are, " \
+                    "List parking lots, " \
+                    "Details for Structure 1, " \
+                    "How is parking at Library " 
+                    # "My favorite parking lot is Structure 1," \
     should_end_session = False
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
@@ -240,7 +255,9 @@ def on_intent(intent_request, session):
     #     return set_lot_in_session(intent, session)
     # elif intent_name == "WhatIsMyLotIntent":
     #     return get_lot_from_session(intent, session)
-    print('intent_name:' + intent_name)
+    print('intent_name: ' + intent_name)
+    print('intent: ')
+    print(intent)
     if intent_name == "GetAllLotNames":
         return get_all_lot_names(intent, session)
     elif intent_name == "GetLotDetails":
@@ -282,6 +299,8 @@ def lambda_handler(event, context):
     # if (event['session']['application']['applicationId'] !=
     #         "amzn1.echo-sdk-ams.app.[unique-value-here]"):
     #     raise ValueError("Invalid Application ID")
+    print('EVENT:')
+    print(event)
 
     if event['session']['new']:
         on_session_started({'requestId': event['request']['requestId']},

@@ -1,0 +1,21 @@
+parking structure 1
+derp
+a b c
+Beach House Lot
+Structure 1
+Structure 2
+Structure 3
+Structure 4
+Structure 5
+Structure 6
+Structure 9
+Lot 8 North
+Lot 3 North
+Lot 1 North
+Pier Deck
+Lot 4 South
+Lot 5 South
+Civic Center
+Library
+Structure 7
+Structure 8
